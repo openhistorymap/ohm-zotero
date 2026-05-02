@@ -8,7 +8,9 @@
   "applications": {
     "zotero": {
       "id": "ohm-zotero@openhistorymap.org",
-      "strict_min_version": "6.999"
+      "update_url": "https://github.com/openhistorymap/ohm-zotero/releases/latest/download/update.json",
+      "strict_min_version": "6.999",
+      "strict_max_version": "99.0.*"
     }
   }
 }
