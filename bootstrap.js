@@ -3,10 +3,10 @@
 
 var OHM;
 
-function install() {}
-function uninstall() {}
+this.install = function install(_data, _reason) {};
+this.uninstall = function uninstall(_data, _reason) {};
 
-async function startup({ id, version, rootURI }, _reason) {
+this.startup = async function startup({ id, version, rootURI }, _reason) {
 	await Zotero.initializationPromise;
 
 	const scope = { Zotero };
@@ -68,9 +68,9 @@ async function startup({ id, version, rootURI }, _reason) {
 			else body.replaceChildren();
 		},
 	});
-}
+};
 
-function shutdown() {
+this.shutdown = function shutdown(_data, _reason) {
 	try {
 		if (OHM && OHM.sectionID && Zotero.ItemPaneManager) {
 			Zotero.ItemPaneManager.unregisterSection(OHM.sectionID);
@@ -81,4 +81,4 @@ function shutdown() {
 	}
 	if (Zotero.OHM === OHM) delete Zotero.OHM;
 	OHM = undefined;
-}
+};
