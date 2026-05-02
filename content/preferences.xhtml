@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<vbox xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      xmlns:html="http://www.w3.org/1999/xhtml"
+      id="ohm-prefs">
+	<groupbox>
+		<label><html:h2>OHM Data Index</html:h2></label>
+		<vbox style="padding: 4px 8px; gap: 6px;">
+			<html:p style="margin: 0 0 6px 0; color: var(--fill-secondary); font-size: 12px;">
+				Endpoint of the OHM Data Index API (the <html:code>ohmi</html:code> service).
+				Used to populate topic and area dropdowns in the OHM section of the item pane.
+			</html:p>
+			<hbox align="center" style="gap: 8px;">
+				<label value="API URL:" style="min-width: 80px;"/>
+				<html:input id="ohm-pref-apiurl" type="text" style="flex:1; min-width: 360px; padding: 2px 4px;"/>
+			</hbox>
+			<hbox align="center" style="gap: 8px;">
+				<label value="Tag prefix:" style="min-width: 80px;"/>
+				<html:input id="ohm-pref-tagprefix" type="text" style="width: 8em; padding: 2px 4px;"/>
+				<label style="color: var(--fill-secondary); font-size: 11px;"
+				       value="(advanced — must match what ohmi expects)"/>
+			</hbox>
+			<hbox align="center" style="gap: 8px; margin-top: 4px;">
+				<button id="ohm-pref-test" label="Test connection"/>
+				<button id="ohm-pref-clearcache" label="Clear vocabulary cache"/>
+				<label id="ohm-pref-status" style="color: var(--fill-secondary); font-size: 11px;"/>
+			</hbox>
+		</vbox>
+	</groupbox>
+</vbox>
