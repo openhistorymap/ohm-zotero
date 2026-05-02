@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate manifest.json
+        run: python3 -c "import json; json.load(open('manifest.json')); print('manifest.json OK')"
+
+      - name: Syntax-check JS
+        run: |
+          for f in bootstrap.js lib/*.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+      - name: Build .xpi
+        run: bash build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohm-zotero-xpi
+          path: ohm-zotero-*.xpi
+          retention-days: 30

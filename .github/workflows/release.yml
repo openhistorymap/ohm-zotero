@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: ver
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG="${REF#v}"
+          MANIFEST_VER=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+          if [ "$TAG" != "$MANIFEST_VER" ]; then
+            echo "::error::Tag $REF (=$TAG) does not match manifest.json version $MANIFEST_VER"
+            exit 1
+          fi
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Build .xpi
+        run: bash build.sh
+
+      - name: Generate update.json
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          ID=$(python3 -c "import json; print(json.load(open('manifest.json'))['applications']['zotero']['id'])")
+          MIN=$(python3 -c "import json; print(json.load(open('manifest.json'))['applications']['zotero'].get('strict_min_version',''))")
+          REPO="${{ github.repository }}"
+          python3 -c "
+          import json
+          out = {
+            'addons': {
+              '$ID': {
+                'updates': [{
+                  'version': '$VERSION',
+                  'update_link': f'https://github.com/$REPO/releases/download/v$VERSION/ohm-zotero-$VERSION.xpi',
+                  'applications': {
+                    'zotero': { 'strict_min_version': '$MIN' }
+                  }
+                }]
+              }
+            }
+          }
+          json.dump(out, open('update.json','w'), indent=2)
+          print(json.dumps(out, indent=2))
+          "
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.ref }}
+          name: ${{ steps.ver.outputs.ref }}
+          files: |
+            ohm-zotero-${{ steps.ver.outputs.version }}.xpi
+            update.json
+          generate_release_notes: true
