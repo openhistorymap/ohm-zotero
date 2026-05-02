@@ -7,7 +7,9 @@ VERSION="$(python3 -c 'import json,sys; print(json.load(open("manifest.json"))["
 OUT="${NAME}-${VERSION}.xpi"
 
 rm -f "$OUT"
-zip -r -X "$OUT" \
+# -D: skip directory entries (Mozilla's JAR enumerator is fussy about them)
+# -X: strip extra fields (uid/gid/timestamps) for reproducible builds
+zip -r -D -X "$OUT" \
     manifest.json \
     bootstrap.js \
     prefs.js \
@@ -17,3 +19,4 @@ zip -r -X "$OUT" \
     -x '*.DS_Store' '*~' '*.swp'
 
 echo "Built $OUT"
+unzip -l "$OUT"
