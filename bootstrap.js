@@ -14,7 +14,6 @@ async function startup({ id, version, rootURI }, _reason) {
 		'lib/api.js',
 		'lib/tags.js',
 		'lib/section.js',
-		'lib/preferences.js',
 	]) {
 		Services.scriptloader.loadSubScript(rootURI + path, scope);
 	}
@@ -28,7 +27,6 @@ async function startup({ id, version, rootURI }, _reason) {
 		writeDescriptors: scope.writeOHMDescriptors,
 		buildTags: scope.buildOHMTags,
 		renderSection: scope.renderOHMSection,
-		bindPreferences: scope.bindOHMPreferences,
 		sectionID: null,
 	};
 	Zotero.OHM = OHM;
