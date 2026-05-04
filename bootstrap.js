@@ -15,6 +15,7 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 		'lib/tags.js',
 		'lib/section.js',
 		'lib/columns.js',
+		'lib/archive.js',
 	]) {
 		Services.scriptloader.loadSubScript(rootURI + path, scope);
 	}
@@ -24,6 +25,8 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 		version,
 		rootURI,
 		api: new scope.OHMApi(),
+		archive: new scope.OHMArchive(),
+		archiveItems: scope.archiveItems,
 		readDescriptors: scope.readOHMDescriptors,
 		writeDescriptors: scope.writeOHMDescriptors,
 		buildTags: scope.buildOHMTags,
@@ -32,6 +35,7 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 		unregisterColumns: scope.unregisterOHMColumns,
 		sectionID: null,
 		columnsHandle: null,
+		windows: new WeakSet(),
 	};
 	Zotero.OHM = OHM;
 
@@ -49,6 +53,13 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 	}
 
 	OHM.columnsHandle = await OHM.registerColumns(OHM);
+
+	// Bootstrap menu entry into already-open main windows.
+	const enumerator = Services.wm.getEnumerator('navigator:browser');
+	while (enumerator.hasMoreElements()) {
+		const win = enumerator.getNext();
+		if (win && win.ZoteroPane) installMenuEntry(win);
+	}
 
 	OHM.sectionID = Zotero.ItemPaneManager.registerSection({
 		paneID: 'ohm-descriptors',
@@ -76,6 +87,55 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 	});
 };
 
+function installMenuEntry(window) {
+	if (!window || !window.document || OHM.windows.has(window)) return;
+	OHM.windows.add(window);
+	const doc = window.document;
+	const popup = doc.getElementById('menu_ToolsPopup');
+	if (!popup) return;
+	if (doc.getElementById('ohm-tools-archive-selected')) return;
+	const item = doc.createXULElement('menuitem');
+	item.id = 'ohm-tools-archive-selected';
+	item.setAttribute('label', 'OHM: Archive selected URLs (Internet Archive)');
+	item.addEventListener('command', async () => {
+		try {
+			const ZP = window.ZoteroPane || Zotero.getActiveZoteroPane();
+			if (!ZP) return;
+			const sel = ZP.getSelectedItems().filter(it => it && it.isRegularItem && it.isRegularItem());
+			await OHM.archiveItems(window, OHM, sel);
+		}
+		catch (e) {
+			Zotero.logError(e);
+		}
+	});
+	popup.appendChild(item);
+}
+
+function removeMenuEntry(window) {
+	if (!window || !window.document) return;
+	OHM.windows.delete(window);
+	const node = window.document.getElementById('ohm-tools-archive-selected');
+	if (node) node.remove();
+}
+
+this.onMainWindowLoad = function ({ window }) {
+	try {
+		if (OHM) installMenuEntry(window);
+	}
+	catch (e) {
+		Zotero.logError(e);
+	}
+};
+
+this.onMainWindowUnload = function ({ window }) {
+	try {
+		if (OHM) removeMenuEntry(window);
+	}
+	catch (e) {
+		Zotero.logError(e);
+	}
+};
+
 this.shutdown = function shutdown(_data, _reason) {
 	try {
 		if (OHM && OHM.sectionID && Zotero.ItemPaneManager) {
@@ -88,6 +148,16 @@ this.shutdown = function shutdown(_data, _reason) {
 	try {
 		if (OHM && OHM.columnsHandle && OHM.unregisterColumns) {
 			OHM.unregisterColumns(OHM.columnsHandle);
+		}
+	}
+	catch (e) {
+		Zotero.logError(e);
+	}
+	try {
+		const enumerator = Services.wm.getEnumerator('navigator:browser');
+		while (enumerator.hasMoreElements()) {
+			const win = enumerator.getNext();
+			if (win && win.document) removeMenuEntry(win);
 		}
 	}
 	catch (e) {
