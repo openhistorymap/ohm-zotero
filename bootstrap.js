@@ -14,6 +14,7 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 		'lib/api.js',
 		'lib/tags.js',
 		'lib/section.js',
+		'lib/columns.js',
 	]) {
 		Services.scriptloader.loadSubScript(rootURI + path, scope);
 	}
@@ -27,7 +28,10 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 		writeDescriptors: scope.writeOHMDescriptors,
 		buildTags: scope.buildOHMTags,
 		renderSection: scope.renderOHMSection,
+		registerColumns: scope.registerOHMColumns,
+		unregisterColumns: scope.unregisterOHMColumns,
 		sectionID: null,
+		columnsHandle: null,
 	};
 	Zotero.OHM = OHM;
 
@@ -43,6 +47,8 @@ this.startup = async function startup({ id, version, rootURI }, _reason) {
 	catch (e) {
 		Zotero.logError(e);
 	}
+
+	OHM.columnsHandle = await OHM.registerColumns(OHM);
 
 	OHM.sectionID = Zotero.ItemPaneManager.registerSection({
 		paneID: 'ohm-descriptors',
@@ -74,6 +80,14 @@ this.shutdown = function shutdown(_data, _reason) {
 	try {
 		if (OHM && OHM.sectionID && Zotero.ItemPaneManager) {
 			Zotero.ItemPaneManager.unregisterSection(OHM.sectionID);
+		}
+	}
+	catch (e) {
+		Zotero.logError(e);
+	}
+	try {
+		if (OHM && OHM.columnsHandle && OHM.unregisterColumns) {
+			OHM.unregisterColumns(OHM.columnsHandle);
 		}
 	}
 	catch (e) {
